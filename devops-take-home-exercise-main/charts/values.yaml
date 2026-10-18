@@ -31,3 +31,8 @@ db:
   host: orders-db.internal
   existingSecret: "order-processor-db"
   passwordKey: password
+
+
+monitoring:
+  enabled: false
+  prometheusRelease: kube-prometheus-stack
