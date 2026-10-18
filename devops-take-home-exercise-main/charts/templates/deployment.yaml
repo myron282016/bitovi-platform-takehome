@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +7,11 @@ metadata:
     app: order-processor
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: order-processor
@@ -14,21 +20,53 @@ spec:
       labels:
         app: order-processor
     spec:
-      terminationGracePeriodSeconds: 5
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        seccompProfile:
+          type: {{ .Values.securityContext.seccompProfile.type }}
       containers:
         - name: order-processor
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: DB_HOST
-              value: {{ .Values.db.host }}
+              value: {{ .Values.db.host | quote }}
+            {{- with .Values.db.existingSecret }}
             - name: DB_PASSWORD
-              value: {{ .Values.db.password }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ . | quote }}
+                  key: {{ $.Values.db.passwordKey | quote }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 15
           livenessProbe:
             httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
               path: /readyz
-              port: 8080
-            initialDelaySeconds: 2
-            periodSeconds: 5
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

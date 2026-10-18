@@ -1,10 +1,33 @@
-image:
-  repository: order-processor
-  tag: latest
-
 replicaCount: 1
 
-# Downstream Postgres the worker writes to.
+image:
+  repository: order-processor
+  tag: "v1"
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+terminationGracePeriodSeconds: 30
+
 db:
   host: orders-db.internal
-  password: ""
+  existingSecret: "order-processor-db"
+  passwordKey: password
