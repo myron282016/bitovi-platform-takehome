@@ -8,12 +8,15 @@ spec:
   source:
     repoURL: https://github.com/myron282016/bitovi-platform-takehome.git
     targetRevision: master
-    path: charts
+    path: devops-take-home-exercise-main/charts
     helm:
       releaseName: order-processor
+      parameters:
+        - name: monitoring.enabled
+          value: "false"
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: bitovi-gitops-test
   syncPolicy:
     automated:
       prune: true
