@@ -1,0 +1,10 @@
+image:
+  repository: order-processor
+  tag: latest
+
+replicaCount: 1
+
+# Downstream Postgres the worker writes to.
+db:
+  host: orders-db.internal
+  password: ""
